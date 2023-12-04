@@ -10,6 +10,10 @@
 #include "./Functions/Read/Employee/employee.h"
 #include "./Functions/Read/Customer/customer.h"
 #include "./Functions/Read/Vehicle/vehicle.h"
+
+#include "./Functions/Update/Sale/sale.h"
+
+#include "./Functions/Delete/Sale/sale.h"
 #include <vector>
 
 
@@ -32,14 +36,23 @@ public:
     void OnMenuSelect(wxCommandEvent& event);
     void OnSubmit(wxCommandEvent& event);
     void UpdateDatabaseForRow(int row);
+    
+    void OnAddRow(wxCommandEvent& event);
+    void OnDeleteRow(wxCommandEvent& event);
+
+    void PositionAddRowButton(wxButton* button);
+    void OnResize(wxSizeEvent& event);
 
 private:
     Session *session;  // Use a pointer for session
     wxPanel *mainPanel;     // Main panel for the new view
     wxListBox* menuList;  // Added menu list
     wxGrid* grid;
+    wxString selectedOption;
+    wxButton* addRowButton;
 
     const int ID_EditRow = wxNewId(); // ContextMenu Item ID
+    const int ID_DeleteRow = wxNewId(); // ContextMenu Item ID
 
     int currentRow = -1;  // Add a member variable to store the current row
 
@@ -64,9 +77,12 @@ bool MyApp::OnInit() {
 MyFrame::MyFrame(const wxString& title, const wxPoint& pos, const wxSize& size)
     : wxFrame(NULL, wxID_ANY, title, pos, size) {
     wxBoxSizer* vbox = new wxBoxSizer(wxVERTICAL);
+    
 
     mainPanel = new wxPanel(this);
     vbox->Add(mainPanel, 1, wxEXPAND);
+    Bind(wxEVT_SIZE, &MyFrame::OnResize, this);
+
 
     SetSizer(vbox);
     mainPanel->Hide(); // Initially hide the main panel
@@ -120,13 +136,22 @@ void MyFrame::CreateNewView() {
     mainPanel->Show();    // Show the main panel
     this->Layout();       // Update the layout of the frame
     LoadSaleData(mainPanel, session, grid);
+    selectedOption = "Sales";
+    grid->AutoSizeColumns();
     grid->Bind(wxEVT_GRID_CELL_RIGHT_CLICK, &MyFrame::OnRightClick, this);
 
+    // Create the "Add Row" button
+    addRowButton = new wxButton(mainPanel, wxID_ANY, "Add New Row", wxDefaultPosition, wxDefaultSize);
+
+    addRowButton->Bind(wxEVT_BUTTON, &MyFrame::OnAddRow, this);
+
+    // Position the button in the bottom-right corner of the frame
+    PositionAddRowButton(addRowButton);
 }
 
 // Add functionality to highlight the selected table
 void MyFrame::OnMenuSelect(wxCommandEvent& event) {
-    wxString selectedOption = menuList->GetStringSelection();
+    selectedOption = menuList->GetStringSelection();
 
     // Change the background color of the selected table to highlight it
     if (selectedOption == "Sales") {
@@ -138,6 +163,7 @@ void MyFrame::OnMenuSelect(wxCommandEvent& event) {
     } else if (selectedOption == "Vehicles") {
         LoadVehicleData(mainPanel, session, grid);
     }
+    grid->AutoSizeColumns();
     grid->Bind(wxEVT_GRID_CELL_RIGHT_CLICK, &MyFrame::OnRightClick, this);
 }
 
@@ -149,9 +175,11 @@ void MyFrame::OnRightClick(wxGridEvent& event) {
     currentRow = event.GetRow();  // Store the current row
     wxMenu menu;
     menu.Append(ID_EditRow, "Edit Row");
+    menu.Append(ID_DeleteRow, "Delete Row"); // Add this line
 
     // Bind event for menu item
     Bind(wxEVT_COMMAND_MENU_SELECTED, &MyFrame::OnEditRow, this, ID_EditRow);
+    Bind(wxEVT_COMMAND_MENU_SELECTED, &MyFrame::OnDeleteRow, this, ID_DeleteRow); // Add this line
 
     PopupMenu(&menu, position);
 }
@@ -206,8 +234,61 @@ void MyFrame::OnSubmit(wxCommandEvent& event) {
     // Hide or destroy the submit button
     button->Destroy();
 }
-
+// UPDATE
 void MyFrame::UpdateDatabaseForRow(int row) {
-    // Implement the logic to update the database based on the new values in the grid row
-    // ...
+
+    if(selectedOption == "Sales"){
+
+    // Extract values from the grid
+    int saleId = wxAtoi(grid->GetCellValue(row, 0));
+    int empId = wxAtoi(grid->GetCellValue(row, 1));
+    int custId = wxAtoi(grid->GetCellValue(row, 2));
+    std::string vin = grid->GetCellValue(row, 3).ToStdString();
+    double price = wxAtof(grid->GetCellValue(row, 4));
+    std::string saleDateString = grid->GetCellValue(row, 5).ToStdString();
+
+    // Call the update function
+    UpdateSaleRow(session, saleId, empId, custId, vin, price, saleDateString);
+    }
+}
+
+// DELETE
+void MyFrame::OnDeleteRow(wxCommandEvent& event) {
+    if(selectedOption == "Sales"){
+        int saleId = wxAtoi(grid->GetCellValue(currentRow, 0));
+        DeleteSaleRecord(session, saleId);
+        grid->DeleteRows(currentRow, 1); // Remove the row from the grid
+    }
+}
+
+// Create
+void MyFrame::OnAddRow(wxCommandEvent& event) {
+    // Append a new row to the grid
+    grid->AppendRows(1);
+    int newRow = grid->GetNumberRows() - 1;
+
+    currentRow = newRow;
+    // Finish this... add a new submit function that is similar but different to the edit one
+
+}
+
+void MyFrame::PositionAddRowButton(wxButton* button) {
+    if (!button) return;
+
+    // Get the size of the main panel and the button
+    wxSize panelSize = mainPanel->GetSize();
+    wxSize buttonSize = button->GetSize();
+
+    // Calculate the position for the button
+    int xPos = panelSize.GetWidth() - buttonSize.GetWidth() - 20; // 20 is a margin
+    int yPos = panelSize.GetHeight() - buttonSize.GetHeight() - 20;
+
+    // Set the position of the button
+    button->SetPosition(wxPoint(xPos, yPos));
+}
+
+void MyFrame::OnResize(wxSizeEvent& event) {
+    // Reposition the add row button
+    PositionAddRowButton(addRowButton);
+    event.Skip(); // Ensure the event is still processed by default handlers
 }
