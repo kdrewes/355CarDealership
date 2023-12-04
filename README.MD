@@ -1,5 +1,5 @@
-#Authors
+###Authors
 Jordan Nakamoto
 
-#Project Description
+###Project Description
 An app to manage the inventory of a car dealership. Local MYSQL database connected to CPP program.
