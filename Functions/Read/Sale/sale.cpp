@@ -17,6 +17,7 @@ void LoadSaleData(wxPanel* mainPanel, Session* session, wxGrid*& grid) {
         RowResult rows = salesTable.select("sale_id", "emp_id", "cust_id", "vin", "price", "UNIX_TIMESTAMP(sale_date) AS saleTimestamp").execute();
 
         grid = new wxGrid(mainPanel, wxID_ANY, wxDefaultPosition, wxSize(680, 400));
+
         
         int numRows = rows.count();
         int numCols = 6;
@@ -42,6 +43,12 @@ void LoadSaleData(wxPanel* mainPanel, Session* session, wxGrid*& grid) {
             grid->SetCellValue(rowIdx, 5, wxString(dateString)); // Set the formatted date string in the grid
 
             rowIdx++;
+        }
+
+        for (int row = 0; row < grid->GetNumberRows(); ++row) {
+            for( int col = 0; col < numCols; col++){
+                grid->SetReadOnly(row, col, true);
+            }
         }
 
         // sizer is just the section that the grid gets added to. it contains both the menu and the grid in a parent container

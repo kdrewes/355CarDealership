@@ -15,6 +15,7 @@ void LoadCustomerData(wxPanel* mainPanel, Session* session, wxGrid*& grid) {
         RowResult rows = salesTable.select("customer_id", "name", "phone_number", "email", "address").execute();
 
         grid = new wxGrid(mainPanel, wxID_ANY, wxDefaultPosition, wxSize(680, 400));
+        grid->EnableEditing(false);
         
         int numRows = rows.count();
         int numCols = 5;

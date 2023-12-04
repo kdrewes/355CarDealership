@@ -15,6 +15,7 @@ void LoadEmployeeData(wxPanel* mainPanel, Session* session, wxGrid*& grid) {
         RowResult rows = salesTable.select("employee_id", "name", "make_responsible", "phone_number", "email", "address").execute();
 
         grid = new wxGrid(mainPanel, wxID_ANY, wxDefaultPosition, wxSize(680, 400));
+        grid->EnableEditing(false);
         
         int numRows = rows.count();
         int numCols = 6;
@@ -40,7 +41,7 @@ void LoadEmployeeData(wxPanel* mainPanel, Session* session, wxGrid*& grid) {
         }
 
          // sizer is just the section that the grid gets added to. it contains both the menu and the grid in a parent container
-         
+
         wxSizer* sizer = mainPanel->GetSizer();
         if (sizer != nullptr) {
             sizer->Add(grid, 1, wxEXPAND | wxALL, 5);

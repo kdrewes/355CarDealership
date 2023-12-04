@@ -18,6 +18,7 @@ void LoadVehicleData(wxPanel* mainPanel, Session* session, wxGrid*& grid) {
         RowResult rows = salesTable.select("vin", "manufacturer", "model_name", "UNIX_TIMESTAMP(model_year) AS yearTimestamp", "price").execute();
 
         grid = new wxGrid(mainPanel, wxID_ANY, wxDefaultPosition, wxSize(680, 400));
+        grid->EnableEditing(false);
         
         int numRows = rows.count();
         int numCols = 5;
