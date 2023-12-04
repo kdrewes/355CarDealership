@@ -1,3 +1,22 @@
+/*
+// Main:
+// Duties:
+// --------------------
+// I.  Draws UI Canvas and accepts User Mouse/Keyboard Input
+//
+// UI Features:
+// Datatype Menu, Db Records Grid, Context Menu
+// --------------------
+// II. Communicates with MYSQL Database
+//
+// Db API Features:
+// Creates connection to local MYSQL instance.
+// Links database commands SQL <-> CPP Interface to Program User Interface
+// Create, Read, Update, Delete
+// --------------------
+*/
+
+
 #include <wx/wx.h>
 #include <wx/grid.h>
 #include <wx/listbox.h> // Add this line to include ListBox header
@@ -16,9 +35,6 @@
 #include "./Functions/Delete/Sale/sale.h"
 #include <vector>
 
-
-
-
 using std::cout;
 using std::endl;
 using namespace mysqlx;
@@ -30,50 +46,52 @@ public:
 
 class MyFrame : public wxFrame {
 public:
-    MyFrame(const wxString& title, const wxPoint& pos, const wxSize& size);
+    MyFrame(const wxString& title, const wxPoint& pos, const wxSize& size); // Define UI Canvas
     void ConnectToDatabase();
-    void CreateNewView();  // New method to create the new view
+    void CreateNewView();  // Draw UI Canvas for the first time
+
+    // Interaction Events
     void OnMenuSelect(wxCommandEvent& event);
     void OnSubmit(wxCommandEvent& event);
     void UpdateDatabaseForRow(int row);
     
     void OnAddRow(wxCommandEvent& event);
     void OnDeleteRow(wxCommandEvent& event);
+    void OnRightClick(wxGridEvent& event);
+    void OnEditRow(wxCommandEvent& event);
 
     void PositionAddRowButton(wxButton* button);
     void OnResize(wxSizeEvent& event);
 
 private:
-    Session *session;  // Use a pointer for session
-    wxPanel *mainPanel;     // Main panel for the new view
-    wxListBox* menuList;  // Added menu list
+    Session *session;     // Use a pointer for session ... 
+    wxPanel *mainPanel;   // we will be passing these pointer variables to 
+    wxListBox* menuList;  // the local mysql db through imported function calls
     wxGrid* grid;
     wxString selectedOption;
     wxButton* addRowButton;
 
-    const int ID_EditRow = wxNewId(); // ContextMenu Item ID
-    const int ID_DeleteRow = wxNewId(); // ContextMenu Item ID
+    // Register ContextMenu (right click) Items
+    const int ID_EditRow = wxNewId(); 
+    const int ID_DeleteRow = wxNewId();
 
-    int currentRow = -1;  // Add a member variable to store the current row
+    int currentRow = -1;  // Add a member variable to store the current selected or interacting row
 
-    void OnRightClick(wxGridEvent& event);
-    void OnEditRow(wxCommandEvent& event);
-
-    // UPDATE - RowEdit
+    // Memory for row colors and rows that are currently selected for edit
     wxColour originalColor;
     std::vector<int> editedRows;
     
 };
 
-wxIMPLEMENT_APP(MyApp);
+wxIMPLEMENT_APP(MyApp); // start up wxWidgets
 
+// 1. Main UI Canvas Frame Constructor - wxWidgets 
 bool MyApp::OnInit() {
     MyFrame *frame = new MyFrame("Car Dealership App", wxDefaultPosition, wxSize(900, 450));
     frame->Show(true);
     return true;
 }
 
-// Updated MyFrame constructor
 MyFrame::MyFrame(const wxString& title, const wxPoint& pos, const wxSize& size)
     : wxFrame(NULL, wxID_ANY, title, pos, size) {
     wxBoxSizer* vbox = new wxBoxSizer(wxVERTICAL);
@@ -90,6 +108,7 @@ MyFrame::MyFrame(const wxString& title, const wxPoint& pos, const wxSize& size)
     ConnectToDatabase(); // Connect to the database and create the view
 }
 
+// 2. Database Connection
 void MyFrame::ConnectToDatabase() {
     try {
         session = new Session("mysqlx://root:YOURPASSWORDHERE@127.0.0.1");
@@ -108,6 +127,7 @@ void MyFrame::ConnectToDatabase() {
     }
 }
 
+// 3. First Paint of UI and its elements
 void MyFrame::CreateNewView() {
     // Clear the main panel to prepare for the new view
     mainPanel->DestroyChildren();  // Clear any existing children
@@ -149,7 +169,7 @@ void MyFrame::CreateNewView() {
     PositionAddRowButton(addRowButton);
 }
 
-// Add functionality to highlight the selected table
+// 4. Left Sidebar Menu and its Options
 void MyFrame::OnMenuSelect(wxCommandEvent& event) {
     selectedOption = menuList->GetStringSelection();
 
@@ -167,7 +187,7 @@ void MyFrame::OnMenuSelect(wxCommandEvent& event) {
     grid->Bind(wxEVT_GRID_CELL_RIGHT_CLICK, &MyFrame::OnRightClick, this);
 }
 
-
+// 5. ContextMenu Event Handler
 void MyFrame::OnRightClick(wxGridEvent& event) {
     wxPoint position = wxGetMousePosition();
     position = ScreenToClient(position);
@@ -184,6 +204,7 @@ void MyFrame::OnRightClick(wxGridEvent& event) {
     PopupMenu(&menu, position);
 }
 
+// 5a1. ContextMenu Event 1 - EDIT
 void MyFrame::OnEditRow(wxCommandEvent& event) {
 
     wxColour highlightColor = *wxLIGHT_GREY; 
@@ -215,6 +236,7 @@ void MyFrame::OnEditRow(wxCommandEvent& event) {
     submitButton->Bind(wxEVT_BUTTON, &MyFrame::OnSubmit, this);
 }
 
+// 5a2. Submit Action/Button OnEdit - EDIT
 void MyFrame::OnSubmit(wxCommandEvent& event) {
     wxButton* button = dynamic_cast<wxButton*>(event.GetEventObject());
     int row = *static_cast<int*>(button->GetClientData());
@@ -234,7 +256,20 @@ void MyFrame::OnSubmit(wxCommandEvent& event) {
     // Hide or destroy the submit button
     button->Destroy();
 }
+
+// 5b. ContextMenu Event 2 - DELETE
+void MyFrame::OnDeleteRow(wxCommandEvent& event) {
+    if(selectedOption == "Sales"){
+        int saleId = wxAtoi(grid->GetCellValue(currentRow, 0));
+        DeleteSaleRecord(session, saleId);
+        grid->DeleteRows(currentRow, 1); // Remove the row from the grid
+    }
+}
+
+
+// 6.
 // UPDATE
+// (Called by 5a2. - EDIT on SUBMIT)
 void MyFrame::UpdateDatabaseForRow(int row) {
 
     if(selectedOption == "Sales"){
@@ -252,16 +287,9 @@ void MyFrame::UpdateDatabaseForRow(int row) {
     }
 }
 
-// DELETE
-void MyFrame::OnDeleteRow(wxCommandEvent& event) {
-    if(selectedOption == "Sales"){
-        int saleId = wxAtoi(grid->GetCellValue(currentRow, 0));
-        DeleteSaleRecord(session, saleId);
-        grid->DeleteRows(currentRow, 1); // Remove the row from the grid
-    }
-}
 
-// Create
+// 7.
+// CREATE
 void MyFrame::OnAddRow(wxCommandEvent& event) {
     // Append a new row to the grid
     grid->AppendRows(1);
@@ -272,6 +300,9 @@ void MyFrame::OnAddRow(wxCommandEvent& event) {
 
 }
 
+
+// 8. Draw "Add New Row" Button to Canvas and Reposition on App Window Resize
+// OnResize() can be extended to manage other elements as well...
 void MyFrame::PositionAddRowButton(wxButton* button) {
     if (!button) return;
 
