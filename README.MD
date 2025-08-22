@@ -1,5 +1,8 @@
 #Authors#
 Jordan Nakamoto
+Richard Yocke,
+Anthony Tara,
+Kyle Drewes
 
 #Project Description#
 An app to manage the inventory of a car dealership. Local MYSQL database connected to CPP program.
