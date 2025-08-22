@@ -1,5 +1,5 @@
 #Authors#
-Jordan Nakamoto
+Jordan Nakamoto,
 Richard Yocke,
 Anthony Tara,
 Kyle Drewes
