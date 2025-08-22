@@ -1,4 +1,5 @@
-#Authors#<br>
+#Authors#
+<br><br>
 Jordan Nakamoto,<br>
 Richard Yocke,<br>
 Anthony Tara,<br>
